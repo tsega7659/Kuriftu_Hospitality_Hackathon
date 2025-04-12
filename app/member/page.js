@@ -71,10 +71,14 @@ export default function MemberPage() {
   };
 
   const getBalanceInCurrency = () => {
+    if (!userData) return "0";
+    
+    const balance = userData.loyaltyCoins || 0;
+    
     if (currency === "USD") {
-      return (klcBalance * KLC_TO_USD_RATE).toFixed(2);
+      return (balance * KLC_TO_USD_RATE).toFixed(2);
     } else if (currency === "ETB") {
-      return (klcBalance * KLC_TO_ETB_RATE).toFixed(2);
+      return (balance * KLC_TO_ETB_RATE).toFixed(2);
     }
     return klcBalance.toFixed(2);
   };
@@ -101,12 +105,39 @@ export default function MemberPage() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-4">Membership Dashboard</h1>
+        <p>Loading your membership details...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-4">Membership Dashboard</h1>
+        <p className="text-red-500">{error}</p>
+        <button
+          onClick={() => window.location.href = "/register"}
+          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          Register Now
+        </button>
+      </div>
+    );
+  }
+
+  const discounts = calculateDiscounts();
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-4">Membership Dashboard</h1>
 
       <div className="flex justify-between mb-4">
         <button
+          onClick={() => disconnect()}
           onClick={() => disconnect()}
           className="bg-red-500 text-white px-4 py-2 rounded"
         >
@@ -126,6 +157,15 @@ export default function MemberPage() {
           <p className="text-gray-600 mb-4">Overview of your membership details</p>
 
           <div className="space-y-2">
+            <p>
+              <strong>Name:</strong> {userData?.name || "N/A"}
+            </p>
+            <p>
+              <strong>Email:</strong> {userData?.email || "N/A"}
+            </p>
+            <p>
+              <strong>Phone:</strong> {userData?.phone || "N/A"}
+            </p>
             <p>
               <strong>Wallet Address:</strong>{" "}
               {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "N/A"}
