@@ -4,7 +4,6 @@ const nextConfig = {
     // Disable ESLint during build
     ignoreDuringBuilds: true,
   },
-  output: 'export',
   images: {
     unoptimized: true,
   },
