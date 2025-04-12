@@ -1,57 +1,95 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
+import { useState } from "react";
+import { useAccount, useDisconnect } from "wagmi";
 import { KLC_TO_USD_RATE, KLC_TO_ETB_RATE } from "../../src/lib/constants";
+
+const DEMO_DATA = {
+  kycVerified: true,
+  tier: "Pioneer",
+  discounts: {
+    birthday: 15,
+    seasonal: 10,
+  },
+  initialBalance: 1000,
+};
 
 export default function MemberPage() {
   const { address, isConnected } = useAccount();
-  const [klcBalance, setKlcBalance] = useState(0); // Mock balance for now
-  const [currency, setCurrency] = useState("KLC"); // Default currency display
-  const [discounts, setDiscounts] = useState({ birthday: 0, seasonal: 0 });
-  const [tier, setTier] = useState("NONE");
+  const { disconnect } = useDisconnect();
+  const [klcBalance, setKlcBalance] = useState(DEMO_DATA.initialBalance);
+  const [currency, setCurrency] = useState("USD");
+  const [discounts] = useState(DEMO_DATA.discounts);
+  const [tier] = useState(DEMO_DATA.tier);
+  const [kycVerified] = useState(DEMO_DATA.kycVerified);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [depositAmount, setDepositAmount] = useState("");
 
-  // Mock fetching user data (replace with actual contract call)
-  useEffect(() => {
-    if (isConnected && address) {
-      // Simulate fetching data from the smart contract
-      const fetchUserData = async () => {
-        // Mock data for the MVP
-        setKlcBalance(500); // Mock 500 KLC
-        setTier("NONE"); // Mock tier
-        setDiscounts({ birthday: 0, seasonal: 0 }); // Mock discounts
-      };
-      fetchUserData();
+  const handleDeposit = async () => {
+    if (!kycVerified) {
+      setError("KYC verification required to deposit KLC.");
+      return;
     }
-  }, [isConnected, address]);
 
-  // Convert KLC to the selected currency
+    const amount = parseFloat(depositAmount);
+    if (!amount || amount <= 0) {
+      setError("Please enter a valid deposit amount.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setKlcBalance((prev) => prev + amount);
+      window.alert(`Successfully deposited ${amount} KLC into your MetaMask wallet!`);
+      setDepositAmount("");
+    } catch (err) {
+      setError("Failed to deposit KLC. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRedeem = async (amount) => {
+    if (klcBalance < amount) {
+      setError(`You need at least ${amount} KLC to redeem this reward.`);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setKlcBalance((prev) => prev - amount);
+      window.alert(`Successfully redeemed ${amount} KLC!`);
+    } catch (err) {
+      setError("Failed to redeem. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getBalanceInCurrency = () => {
     if (currency === "USD") {
       return (klcBalance * KLC_TO_USD_RATE).toFixed(2);
     } else if (currency === "ETB") {
       return (klcBalance * KLC_TO_ETB_RATE).toFixed(2);
     }
-    return klcBalance;
+    return klcBalance.toFixed(2);
   };
 
-  // Handle currency toggle
   const toggleCurrency = () => {
-    if (currency === "KLC") {
-      setCurrency("USD");
-    } else if (currency === "USD") {
-      setCurrency("ETB");
-    } else {
-      setCurrency("KLC");
-    }
+    setCurrency((prev) =>
+      prev === "KLC" ? "USD" : prev === "USD" ? "ETB" : "KLC"
+    );
   };
 
-  // Mock refresh data (replace with actual contract call)
-  const refreshData = async () => {
-    // Simulate refreshing data
-    setKlcBalance(500); // Mock 500 KLC
-    setTier("NONE");
-    setDiscounts({ birthday: 0, seasonal: 0 });
+  const refreshData = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+    }, 800);
   };
 
   if (!isConnected) {
@@ -66,30 +104,45 @@ export default function MemberPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-4">Membership Dashboard</h1>
-      <div className="flex justify-end mb-4">
+
+      <div className="flex justify-between mb-4">
         <button
-          onClick={() => window.alert("Disconnecting wallet...")} // Replace with actual disconnect logic
+          onClick={() => disconnect()}
           className="bg-red-500 text-white px-4 py-2 rounded"
         >
           Disconnect
         </button>
       </div>
+
+      {error && (
+        <div className="bg-red-100 text-red-700 p-4 rounded mb-4">
+          {error}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Your Profile */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-2">Your Profile</h2>
           <p className="text-gray-600 mb-4">Overview of your membership details</p>
+
           <div className="space-y-2">
             <p>
               <strong>Wallet Address:</strong>{" "}
               {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "N/A"}
             </p>
             <p>
-              <strong>Membership Tier:</strong> {tier}
+              <strong>KYC Status:</strong>{" "}
+              <span className={kycVerified ? "text-green-500" : "text-red-500"}>
+                {kycVerified ? "Verified" : "Not Verified"}
+              </span>
+            </p>
+            <p>
+              <strong>Membership Tier:</strong>{" "}
+              <span className="font-semibold text-blue-600">{tier}</span>
             </p>
             <p>
               <strong>Loyalty Coins:</strong>{" "}
-              {getBalanceInCurrency()} {currency}
+              {loading ? "Loading..." : getBalanceInCurrency()} {currency}
               <button
                 onClick={toggleCurrency}
                 className="ml-2 text-blue-500 underline"
@@ -98,50 +151,135 @@ export default function MemberPage() {
               </button>
             </p>
           </div>
+
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold mb-2">Deposit KLC to MetaMask</h3>
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                value={depositAmount}
+                onChange={(e) => setDepositAmount(e.target.value)}
+                placeholder="Enter KLC amount"
+                className="border rounded px-3 py-2 w-full"
+                disabled={loading || !kycVerified}
+              />
+              <button
+                onClick={handleDeposit}
+                className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
+                disabled={loading || !kycVerified}
+              >
+                {loading ? "Depositing..." : "Deposit"}
+              </button>
+            </div>
+            {!kycVerified && (
+              <p className="text-red-500 text-sm mt-2">
+                KYC verification required to deposit KLC.
+              </p>
+            )}
+          </div>
+
           <button
             onClick={refreshData}
-            className="mt-4 bg-green-500 text-white px-4 py-2 rounded"
+            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded w-full"
+            disabled={loading}
           >
-            Refresh Data
+            {loading ? "Refreshing..." : "Refresh Data"}
           </button>
         </div>
 
-        {/* Available Discounts */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-2">Available Discounts</h2>
           <p className="text-gray-600 mb-4">Special offers based on your tier</p>
+
           <div className="space-y-2">
             <p>
-              <strong>Birthday Discount:</strong> {discounts.birthday} %
+              <strong>Birthday Discount:</strong>{" "}
+              <span className="text-green-500">{discounts.birthday}%</span>
             </p>
             <p>
-              <strong>Seasonal Discount:</strong> {discounts.seasonal} %
+              <strong>Seasonal Discount:</strong>{" "}
+              <span className="text-green-500">{discounts.seasonal}%</span>
+            </p>
+            <p className="text-sm text-gray-500 mt-4">
+              {tier === "Pioneer"
+                ? "As a Pioneer member, you get exclusive discounts!"
+                : "Upgrade your tier for better discounts"}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Rewards */}
       <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-2">Rewards</h2>
         <p className="text-gray-600 mb-4">Redeem your loyalty coins for exclusive perks</p>
-        <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
-          <div className="flex items-center">
-            <span className="text-green-500 mr-2">🎁</span>
-            <div>
-              <p className="font-medium">Spa Treatment</p>
-              <p className="text-gray-600">
-                100 KLC ≈ {(100 * KLC_TO_USD_RATE).toFixed(2)} USD ≈{" "}
-                {(100 * KLC_TO_ETB_RATE).toFixed(2)} ETB
-              </p>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
+            <div className="flex items-center">
+              <span className="text-green-500 mr-2">💆</span>
+              <div>
+                <p className="font-medium">Spa Treatment</p>
+                <p className="text-gray-600">
+                  100 KLC ≈ {(100 * KLC_TO_USD_RATE).toFixed(2)} USD ≈{" "}
+                  {(100 * KLC_TO_ETB_RATE).toFixed(2)} ETB
+                </p>
+              </div>
             </div>
+            <button
+              onClick={() => handleRedeem(100)}
+              className="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50"
+              disabled={loading || klcBalance < 100}
+            >
+              {loading ? "Processing..." : "Redeem"}
+            </button>
           </div>
-          <button
-            onClick={() => window.alert("Redeeming spa treatment...")} // Replace with actual redeem logic
-            className="bg-green-500 text-white px-4 py-2 rounded"
-          >
-            Redeem
-          </button>
+
+          <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
+            <div className="flex items-center">
+              <span className="text-yellow-500 mr-2">🍽️</span>
+              <div>
+                <p className="font-medium">Fine Dining Experience</p>
+                <p className="text-gray-600">
+                  250 KLC ≈ {(250 * KLC_TO_USD_RATE).toFixed(2)} USD ≈{" "}
+                  {(250 * KLC_TO_ETB_RATE).toFixed(2)} ETB
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleRedeem(250)}
+              className="bg-yellow-500 text-white px-4 py-2 rounded disabled:opacity-50"
+              disabled={loading || klcBalance < 250}
+            >
+              {loading ? "Processing..." : "Redeem"}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
+            <div className="flex items-center">
+              <span className="text-blue-500 mr-2">🏨</span>
+              <div>
+                <p className="font-medium">Luxury Suite Upgrade</p>
+                <p className="text-gray-600">
+                  500 KLC ≈ {(500 * KLC_TO_USD_RATE).toFixed(2)} USD ≈{" "}
+                  {(500 * KLC_TO_ETB_RATE).toFixed(2)} ETB
+                </p>
+                <p className="text-xs text-blue-600">
+                  {tier === "Pioneer" ? "Available" : "Upgrade to Pioneer tier"}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleRedeem(500)}
+              className={`px-4 py-2 rounded ${
+                tier === "Pioneer" && klcBalance >= 500
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-300 text-gray-500"
+              }`}
+              disabled={loading || tier !== "Pioneer" || klcBalance < 500}
+            >
+              {loading ? "Processing..." : tier === "Pioneer" ? "Redeem" : "Tier Restricted"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

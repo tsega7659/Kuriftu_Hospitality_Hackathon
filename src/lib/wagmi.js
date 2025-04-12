@@ -6,6 +6,6 @@ export const wagmiConfig = createConfig({
   chains: [sepolia],
   connectors: [injected()],
   transports: {
-    [sepolia.id]: http("https://rpc.sepolia.org"),
+    [sepolia.id]: http("https://sepolia.alchemyapi.io/v2/zVif2DiBQ1ebHL7B9QKZ7uqw9TkcwyTr"),
   },
 });

@@ -6,11 +6,13 @@ import Image from 'next/image'
 import { Menu, X, User, LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePathname } from 'next/navigation'
+import { useAccount } from 'wagmi' // import wagmi hook
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  
+  const { isConnected } = useAccount() // check wallet connection
+
   const isActive = (path) => {
     return pathname === path ? 'text-kuriftu-green font-semibold' : ''
   }
@@ -49,21 +51,24 @@ export default function Navbar() {
             </Link>
           </div>
           
-          <div className="hidden md:flex items-center space-x-4">
-            <Link href="/login">
-              <Button variant="outline" className="flex items-center">
-                <LogIn className="mr-2 h-4 w-4" />
-                Login
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button className="bg-kuriftu-green hover:bg-green-600 text-white flex items-center">
-                <User className="mr-2 h-4 w-4" />
-                Register
-              </Button>
-            </Link>
-          </div>
-          
+          {/* Desktop Auth Buttons */}
+          {!isConnected && (
+            <div className="hidden md:flex items-center space-x-4">
+              <Link href="/login">
+                <Button variant="outline" className="flex items-center">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Login
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button className="bg-kuriftu-green hover:bg-green-600 text-white flex items-center">
+                  <User className="mr-2 h-4 w-4" />
+                  Register
+                </Button>
+              </Link>
+            </div>
+          )}
+
           {/* Mobile Navigation Toggle */}
           <div className="md:hidden">
             <button onClick={() => setIsOpen(!isOpen)} className="text-gray-500 hover:text-kuriftu-green">
@@ -91,20 +96,23 @@ export default function Navbar() {
               <Link href="/contact" className={`hover:text-kuriftu-green ${isActive('/contact')}`} onClick={() => setIsOpen(false)}>
                 Contact
               </Link>
-              <div className="flex space-x-4 pt-3">
-                <Link href="/login" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" size="sm" className="flex items-center">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/register" onClick={() => setIsOpen(false)}>
-                  <Button size="sm" className="bg-kuriftu-green hover:bg-green-600 text-white flex items-center">
-                    <User className="mr-2 h-4 w-4" />
-                    Register
-                  </Button>
-                </Link>
-              </div>
+
+              {!isConnected && (
+                <div className="flex space-x-4 pt-3">
+                  <Link href="/login" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" size="sm" className="flex items-center">
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Login
+                    </Button>
+                  </Link>
+                  <Link href="/register" onClick={() => setIsOpen(false)}>
+                    <Button size="sm" className="bg-kuriftu-green hover:bg-green-600 text-white flex items-center">
+                      <User className="mr-2 h-4 w-4" />
+                      Register
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}
