@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 import { KLC_TO_USD_RATE, KLC_TO_ETB_RATE } from "../../src/lib/constants";
 import { userApi } from "../../lib/userStorage";
@@ -14,15 +14,9 @@ export default function MemberPage() {
   const [currency, setCurrency] = useState("KLC"); // Default currency display
 
   // Fetch user data from the backend API
-  useEffect(() => {
-    if (isConnected && address) {
-      fetchUserData();
-    } else {
-      setLoading(false);
-    }
-  }, [isConnected, address]);
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
+    if (!isConnected || !address) return;
+    
     try {
       setLoading(true);
       setError(null);
@@ -45,7 +39,11 @@ export default function MemberPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isConnected, address]);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
 
   // Convert KLC to the selected currency
   const getBalanceInCurrency = () => {
@@ -214,7 +212,7 @@ export default function MemberPage() {
             </div>
           </div>
           <button
-            onClick={() => window.alert("Redeeming spa treatment...")} // Replace with actual redeem logic
+            onClick={() => window.alert("Redeeming spa treatment...")}
             className="bg-green-500 text-white px-4 py-2 rounded"
             disabled={!userData || (userData.loyaltyCoins || 0) < 100}
           >
