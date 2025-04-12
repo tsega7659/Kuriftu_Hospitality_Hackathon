@@ -129,7 +129,7 @@ export default function MemberPage() {
     );
   }
 
-  const discounts = calculateDiscounts();
+  const calculatedDiscounts = calculateDiscounts();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -138,7 +138,7 @@ export default function MemberPage() {
       <div className="flex justify-between mb-4">
         <button
           onClick={() => disconnect()}
-          onClick={() => disconnect()}
+        
           className="bg-red-500 text-white px-4 py-2 rounded"
         >
           Disconnect
@@ -234,11 +234,11 @@ export default function MemberPage() {
           <div className="space-y-2">
             <p>
               <strong>Birthday Discount:</strong>{" "}
-              <span className="text-green-500">{discounts.birthday}%</span>
+              <span className="text-green-500">{calculatedDiscounts.birthday}%</span>
             </p>
             <p>
               <strong>Seasonal Discount:</strong>{" "}
-              <span className="text-green-500">{discounts.seasonal}%</span>
+              <span className="text-green-500">{calculatedDiscounts.seasonal}%</span>
             </p>
             <p className="text-sm text-gray-500 mt-4">
               {tier === "Pioneer"
