@@ -4,16 +4,12 @@ import Image from "next/image";
 import { useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { injected } from "wagmi/connectors";
-import { userApi } from "../../lib/userStorage";
 
 export default function RegisterPage() {
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,32 +19,32 @@ export default function RegisterPage() {
     }
 
     try {
-      setLoading(true);
-      
-      // Create user data object
-      const userData = {
-        name,
-        email,
-        phone,
-        walletAddress: address,
-        membershipTier: "Explorer", // Default tier for new users
-        loyaltyCoins: 0,
-        status: "Active",
-        registrationDate: new Date().toISOString()
-      };
+      const response = await fetch("/api/contract/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ address, email }),
+      });
 
-      // Call the API to create the user
-      const response = await userApi.createUser(userData);
-      
-      alert("Registration successful! Welcome to Kuriftu Hospitality.");
-      
-      // Optionally redirect to member page or dashboard
-      window.location.href = "/member";
+      if (response.ok) {
+        alert("Registration successful!");
+      } else {
+        // Check if the response is JSON
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          alert(`Registration failed: ${errorData.error}`);
+        } else {
+          // Handle non-JSON response (e.g., HTML error page)
+          const text = await response.text();
+          console.error("Non-JSON response:", text);
+          alert(`Registration failed: Server returned an unexpected response`);
+        }
+      }
     } catch (error) {
       console.error("Error during registration:", error);
       alert("An error occurred during registration: " + error.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -68,19 +64,6 @@ export default function RegisterPage() {
           <h1 className="text-3xl font-bold mb-4">Register</h1>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium">
-                Full Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                required
-              />
-            </div>
-            <div>
               <label htmlFor="email" className="block text-sm font-medium">
                 Email
               </label>
@@ -89,19 +72,6 @@ export default function RegisterPage() {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md p-2"
                 required
               />
@@ -133,9 +103,9 @@ export default function RegisterPage() {
             <button
               type="submit"
               className="bg-green-500 text-white px-4 py-2 rounded"
-              disabled={!isConnected || loading}
+              disabled={!isConnected}
             >
-              {loading ? "Registering..." : "Register"}
+              Register
             </button>
           </form>
         </div>
