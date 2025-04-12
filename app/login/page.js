@@ -1,74 +1,28 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowRight, LogIn } from "lucide-react"
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ArrowRight, LogIn } from "lucide-react";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    rememberMe: false,
-  })
+  const router = useRouter();
+  const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
 
-  const [errors, setErrors] = useState({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value,
-    })
-
-    // Clear error when field is edited
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: null,
-      })
+  const handleLogin = () => {
+    if (!isConnected) {
+      connect({ connector: connectors[0] });
     }
-  }
+  };
 
-  const validate = () => {
-    const newErrors = {}
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required"
-    }
-
-    if (!formData.password) {
-      newErrors.password = "Password is required"
-    }
-
-    return newErrors
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-
-    const validationErrors = validate()
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
-      return
-    }
-
-    setIsSubmitting(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
-      // Redirect to dashboard
-      router.push("/dashboard")
-    }, 1500)
+  if (isConnected) {
+    router.push("/member");
+    return null;
   }
 
   return (
@@ -107,7 +61,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right Side - Form */}
+      {/* Right Side - Login */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
@@ -115,80 +69,27 @@ export default function LoginPage() {
               <Image src="/logo.png" alt="Kuriftu Resorts Logo" width={80} height={80} className="w-auto h-16" />
             </div>
             <CardTitle className="text-2xl font-bold">Log in to Your Account</CardTitle>
-            <CardDescription>Enter your credentials to access your membership dashboard</CardDescription>
+            <CardDescription>Connect your wallet to access your membership dashboard</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={errors.email ? "border-red-500" : ""}
-                  placeholder="your.email@example.com"
-                />
-                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-              </div>
-
-              <div className="mb-6">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={errors.password ? "border-red-500" : ""}
-                />
-                {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-              </div>
-
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <Checkbox
-                    id="rememberMe"
-                    name="rememberMe"
-                    checked={formData.rememberMe}
-                    onCheckedChange={(checked) =>
-                      handleChange({
-                        target: { name: "rememberMe", type: "checkbox", checked },
-                      })
-                    }
-                  />
-                  <Label htmlFor="rememberMe" className="ml-2 text-sm text-gray-600">
-                    Remember me
-                  </Label>
-                </div>
-                <Link href="/forgot-password" className="text-sm text-kuriftu-green hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-kuriftu-green hover:bg-green-600 text-white flex items-center justify-center"
-                disabled={isSubmitting}
-              >
-                <LogIn className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Logging in..." : "Log in"}
-              </Button>
-            </form>
+          <CardContent className="flex justify-center">
+            <Button
+              onClick={handleLogin}
+              className="bg-kuriftu-green hover:bg-green-600 text-white flex items-center"
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              Connect with MetaMask
+            </Button>
           </CardContent>
-          <CardFooter className="flex flex-col">
-            <div className="text-center w-full">
-              <p className="text-gray-600 text-sm">
-                Don't have an account?{" "}
-                <Link href="/register" className="text-kuriftu-green hover:underline">
-                  Register now
-                </Link>
-              </p>
-            </div>
-          </CardFooter>
+          <div className="text-center w-full pb-6">
+            <p className="text-gray-600 text-sm">
+              Don’t have an account?{" "}
+              <Link href="/register" className="text-kuriftu-green hover:underline">
+                Register now
+              </Link>
+            </p>
+          </div>
         </Card>
       </div>
     </div>
-  )
+  );
 }
